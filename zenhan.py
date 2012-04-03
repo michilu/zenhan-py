@@ -1,6 +1,7 @@
 # -*- coding: euc-jp -*-
 
 from types import UnicodeType
+from xml.sax.saxutils import escape
 
 ASCII = 1
 DIGIT = 2
@@ -61,6 +62,8 @@ h_ascii = [u"a", u"b", u"c", u"d", u"e", u"f", u"g", u"h", u"i",
            u"=", u">", u"?", u"@", u"[", u"\\", u"]", u"^", u"_",
            u"`", u"{", u"|", u"}", u"~", u" "]
 
+he_ascii = [escape(i) for i in h_ascii]
+
 h_digit = [u"0", u"1", u"2", u"3", u"4", u"5", u"6", u"7", u"8", u"9"]
 
 h_kana = [u"ｱ", u"ｲ", u"ｳ", u"ｴ", u"ｵ",
@@ -84,13 +87,17 @@ h_kana = [u"ｱ", u"ｲ", u"ｳ", u"ｴ", u"ｵ",
 
 # maps of ascii
 zh_ascii = {}
+zhe_ascii = {}
 hz_ascii = {}
 
 for (z, h) in zip(z_ascii, h_ascii):
     zh_ascii[z] = h
     hz_ascii[h] = z
 
-del z_ascii, h_ascii
+for (z, he) in zip(z_ascii, he_ascii):
+    zhe_ascii[z] = he
+
+del z_ascii, h_ascii, he_ascii
 
 # maps of digit
 zh_digit = {}
@@ -130,6 +137,13 @@ def _check_mode_zh(m):
     else:
         raise zenhanError, "Sorry... You set invalid mode."
 
+def _check_mode_zhe(m):
+    t_m = {}
+    if isinstance(m, int) and m >= 0 and m <= 7:
+        return _zhe_trans_map(m)
+    else:
+        raise zenhanError, "Sorry... You set invalid mode."
+
 def _check_mode_hz(m):
     t_m = {}
     if isinstance(m, int) and m >= 0 and m <= 7:
@@ -148,6 +162,18 @@ def _zh_trans_map(m):
         m -= 2
     if m:
         tm.update(zh_ascii)
+    return tm
+
+def _zhe_trans_map(m):
+    tm = {}
+    if m >=4:
+        tm.update(zh_kana)
+        m -= 4
+    if m >= 2:
+        tm.update(zh_digit)
+        m -= 2
+    if m:
+        tm.update(zhe_ascii)
     return tm
 
 def _hz_trans_map(m):
@@ -176,6 +202,20 @@ def z2h(text="", mode=ALL, ignore=()):
             converted.append(c)
         else:
             converted.append(zh_map.get(c, c))
+
+    return ''.join(converted)
+
+def z2he(text="", mode=ALL, ignore=()):
+    converted = []
+
+    text = _check_text(text)
+    zhe_map = _check_mode_zhe(mode)
+
+    for c in text:
+        if c in ignore:
+            converted.append(c)
+        else:
+            converted.append(zhe_map.get(c, c))
 
     return ''.join(converted)
 
